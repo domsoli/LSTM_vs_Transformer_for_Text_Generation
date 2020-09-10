@@ -24,21 +24,21 @@ parser.add_argument('--crop_len',       type=int,   default=10,
                     help='Number of input words')
 
 # Network
-parser.add_argument('--hidden_units',   type=int,   default=2**9,
+parser.add_argument('--hidden_units',   type=int,   default=2**8,
                     help='Number of RNN hidden units')
 parser.add_argument('--layers_num',     type=int,   default=2,
                     help='Number of RNN stacked layers')
-parser.add_argument('--dropout_prob',   type=float, default=0.3,
+parser.add_argument('--dropout_prob',   type=float, default=0.2,
                     help='Dropout probability')
 
 # Optimizer
 parser.add_argument('--optimizer_lr',   type=float,   default=1e-3,
                     help='Optimizer learning rate')
-parser.add_argument('--optimizer_wd',   type=float,   default=1e-4,
+parser.add_argument('--optimizer_wd',   type=float,   default=0,
                     help='Optimizer weight decay')
 
 # Training
-parser.add_argument('--batchsize',      type=int,   default=50,
+parser.add_argument('--batchsize',      type=int,   default=100,
                     help='Training batch size')
 parser.add_argument('--num_epochs',     type=int,   default=1000,
                     help='Number of training epochs')

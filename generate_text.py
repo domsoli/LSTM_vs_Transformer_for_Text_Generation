@@ -18,6 +18,9 @@ from network import Network
 # Parameters
 parser = argparse.ArgumentParser(description='Train the text generator network.')
 
+parser.add_argument('--type', type=str, default="rnn",
+                    help='Type of Network to load. One bwtween "rnn" and "transformer"')
+
 parser.add_argument('--text_seed', type=str, default='This is my greatest treasure said the small bald creature',
                     help='Initial text of the chapter')
 
@@ -32,11 +35,11 @@ parser.add_argument('--model_dir',    type=str, default='model/params/',
 
 
 
-def generate_word(net_out, encoder, stochastic):
+def generate_word(net_out, encoder, stochastic, tau=0.25):
     # Initialize softmax
     softmax = nn.Softmax(dim=1)
     # Compute probabilities
-    prob = softmax(net_out[:, -1, :])
+    prob = softmax(net_out[:, -1, :]/tau)
     if stochastic:
         # probs should be of size batch x classes
         prob_dist = torch.distributions.Categorical(prob)
@@ -50,17 +53,7 @@ def generate_word(net_out, encoder, stochastic):
 
 
 
-if __name__ == "__main__":
-
-    # torch.manual_seed(42)
-
-    ### Parse input arguments
-    args = parser.parse_args()
-
-    ### Check device
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    print('Selected device:', device)
-
+def load_RNN(args):
     ### Load training parameters
     model_dir = Path(args.model_dir)
     print ('Loading model from: %s' % model_dir)
@@ -88,6 +81,30 @@ if __name__ == "__main__":
 
     ### Load network trained parameters
     net.load_state_dict(torch.load(model_dir / 'net_params.pth', map_location='cpu'))
+
+    return net, encoder
+
+
+
+if __name__ == "__main__":
+
+    # torch.manual_seed(42)
+
+    ### Parse input arguments
+    args = parser.parse_args()
+    if args.type not in ["rnn", "trasformer"]:
+        raise ValueError("Wrong network type.")
+
+    ### Check device
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    print('Selected device:', device)
+
+    # Load network
+    if args.type=='rnn':
+        net, encoder = load_RNN(args)
+    # else:
+        # TODO
+
     net.to(device)
     net.eval() # Evaluation mode (e.g. disable dropout)
 
@@ -111,6 +128,8 @@ if __name__ == "__main__":
         next_word = generate_word(net_out, encoder, args.stochastic)
         # Add to seed
         seed += ' ' + next_word
+        # Init first word
+        current_word = next_word
         ## Generate words
         for i in range(args.text_len):
             # Transform words in the corresponding indices
@@ -125,7 +144,11 @@ if __name__ == "__main__":
             next_word = generate_word(net_out, encoder, args.stochastic)
             # Add to seed
             seed += ' ' + next_word
-            # Print the current result
-            print(next_word, end=' ', flush=True)
+            # Print the current result (little tweak to avoid spaces before punctuation)
+            if next_word in [".", ":", ",", ";", "!", "?", "'"]:
+                print(current_word, end='', flush=True)
+            else:
+                print(current_word, end=' ', flush=True)
+            current_word = next_word
 
     print('\n', flush=True)

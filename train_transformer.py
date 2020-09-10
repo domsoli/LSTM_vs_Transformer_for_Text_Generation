@@ -44,6 +44,32 @@ def evaluate(net, loss_fn, data_source, ntokens, bptt = 35):
 
 
 
+def split_train_test(dataset, train_prc=0.8):
+
+    # Define dataset length
+    n = len(dataset)
+    # Define number of training dataset indices
+    m = round(train_prc * n)
+    # Split datasets in two
+    train_idx = np.random.choice(n, m)
+    train = [dataset[i] for i in range(n) if i in train_idx]
+    test = [dataset[i] for i in range(n) if i not in train_idx]
+    return torch.cat(train), torch.cat(test)
+
+
+
+def batchify(data, bsz):
+
+    # Work out how cleanly we can divide the dataset into bsz parts.
+    nbatch = len(data) // bsz
+    # Trim off any extra elements that wouldn't cleanly fit (remainders).
+    data = data.narrow(0, 0, nbatch * bsz)
+    # Evenly divide the data across the bsz batches.
+    data = data.view(bsz, -1).t().contiguous()
+    return data
+
+
+
 def train(net, optimizer, loss_fn, data, ntokens, clip, epoch, bptt = 35, log_interval = 100):
 
     # Turn on training mode which enables dropout.
@@ -83,3 +109,7 @@ def train(net, optimizer, loss_fn, data, ntokens, clip, epoch, bptt = 35, log_in
             start_time = time.time()
             temp_loss.append(float(cur_loss))
     return float(np.mean(temp_loss))
+
+
+
+if __name__ == "__main__":
