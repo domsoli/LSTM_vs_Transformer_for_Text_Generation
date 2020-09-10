@@ -1,0 +1,13 @@
+{
+    "datasetpath": "lotr.txt",
+    "crop_len": 10,
+    "hidden_units": 512,
+    "layers_num": 2,
+    "dropout_prob": 0.3,
+    "optimizer_lr": 0.001,
+    "optimizer_wd": 0.0001,
+    "batchsize": 50,
+    "num_epochs": 10000,
+    "reload": false,
+    "out_dir": "model/params/"
+}
