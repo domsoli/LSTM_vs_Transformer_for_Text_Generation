@@ -6,6 +6,7 @@ import torch
 import argparse
 import numpy as np
 import pandas as pd
+from time import time
 from pathlib import Path
 from torch import optim, nn
 from torchvision import transforms
@@ -21,10 +22,10 @@ parser = argparse.ArgumentParser(description='Train the text generator network.'
 parser.add_argument('--type', type=str, default="rnn",
                     help='Type of Network to load. One bwtween "rnn" and "transformer"')
 
-parser.add_argument('--text_seed', type=str, default='This is my greatest treasure said the small bald creature',
+parser.add_argument('--seed', type=str, default='This is my greatest treasure said the small bald creature',
                     help='Initial text of the chapter')
 
-parser.add_argument('--text_len', type=int, default=25,
+parser.add_argument('--length', type=int, default=25,
                     help='Lenght of generated text')
 
 parser.add_argument('--stochastic',         action='store_true',
@@ -35,7 +36,7 @@ parser.add_argument('--model_dir',    type=str, default='model/params/',
 
 
 
-def generate_word(net_out, encoder, stochastic, tau=0.25):
+def generate_word(net_out, encoder, stochastic, tau=0.1):
     # Initialize softmax
     softmax = nn.Softmax(dim=1)
     # Compute probabilities
@@ -88,7 +89,8 @@ def load_RNN(args):
 
 if __name__ == "__main__":
 
-    # torch.manual_seed(42)
+    t = time()
+    torch.manual_seed(42)
 
     ### Parse input arguments
     args = parser.parse_args()
@@ -110,7 +112,7 @@ if __name__ == "__main__":
 
     ### Get the encoded representation of the seed
     # Print initial seed
-    seed = args.text_seed
+    seed = args.seed
     print(seed, end=' ', flush=True)
 
     with torch.no_grad():
@@ -131,7 +133,7 @@ if __name__ == "__main__":
         # Init first word
         current_word = next_word
         ## Generate words
-        for i in range(args.text_len):
+        for i in range(args.length):
             # Transform words in the corresponding indices
             seed_encoded = torch.Tensor(encoder.encode_text(seed.lower()))
             # Reshape: batch-like shape
