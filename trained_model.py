@@ -54,20 +54,11 @@ def generate_word(net_out, encoder, stochastic, tau=0.1):
 
 
 
-def load_RNN(args):
+def load_RNN(args, emb):
     ### Load training parameters
     model_dir = Path(args.model_dir)
     print ('Loading model from: %s' % model_dir)
     training_args = json.load(open(model_dir / 'training_args.json'))
-
-    ### Load embedding
-    # Set paths
-    new_emb_path = 'model/glove/glove_lotr.csv'
-    emb = pd.read_csv(new_emb_path, sep=' ', quotechar=None, quoting=3, header=None)
-    print("Existing embedding matrix loaded\n")
-    # Set the first column as index
-    emb.index = emb.iloc[:, 0]
-    emb.drop(columns=emb.columns[0], inplace=True)
 
     ### Load encoder
     word_to_index = json.load(open(model_dir / 'word_to_index.json'))
@@ -87,6 +78,27 @@ def load_RNN(args):
 
 
 
+def load_embedding(emb_path):
+    emb = pd.read_csv(emb_path, sep=' ', quotechar=None, quoting=3, header=None)
+    print("Existing embedding matrix loaded\n")
+    # Set the first column as index
+    emb.index = emb.iloc[:, 0]
+    emb.drop(columns=emb.columns[0], inplace=True)
+
+    return emb
+
+
+
+def clean_words(text, corpus):
+    words = text.split()
+    for i, word in enumerate(words):
+        if word not in corpus:
+            index = np.random.randint(len(corpus))
+            words[i] = corpus[index]
+    return ' '.join(words)
+
+
+
 if __name__ == "__main__":
 
     t = time()
@@ -101,9 +113,13 @@ if __name__ == "__main__":
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     print('Selected device:', device)
 
+    # Load embedding matrix
+    emb_path = 'model/glove/glove_lotr.csv'
+    emb = load_embedding(emb_path)
+
     # Load network
     if args.type=='rnn':
-        net, encoder = load_RNN(args)
+        net, encoder = load_RNN(args, emb)
     # else:
         # TODO
 
@@ -114,6 +130,10 @@ if __name__ == "__main__":
     # Print initial seed
     seed = args.seed
     print(seed, end=' ', flush=True)
+
+    # Substitute words not present in the corpus text with random ones
+    corpus = list(emb.index)
+    seed = clean_words(seed, corpus)
 
     with torch.no_grad():
 
@@ -146,7 +166,8 @@ if __name__ == "__main__":
             next_word = generate_word(net_out, encoder, args.stochastic)
             # Add to seed
             seed += ' ' + next_word
-            # Print the current result (little tweak to avoid spaces before punctuation)
+            # Print the current result
+            # little tweak to avoid spaces before punctuation
             if next_word in [".", ":", ",", ";", "!", "?", "'"]:
                 print(current_word, end='', flush=True)
             else:
